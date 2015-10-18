@@ -1,0 +1,52 @@
+.movie-cont.cf #mid .movie-title {
+  position: relative;
+}
+
+.download-actions {
+  position: absolute;
+  z-index: 100;
+}
+
+.movie-cont.cf #mid .movie-title .download-actions {
+  top: 0;
+  right: 0;
+  height: 46px;
+}
+
+#movies .download-actions {
+  top: 0;
+  height: 46px;
+  width: calc(100% - 15px);
+  background-color: rgba(34,43,57,0.93);
+  display: none;
+}
+
+#movies .grid-movie-inner:hover .download-actions {
+  display: block;
+}
+
+.magnet-link {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-image: url(http://www.gekodigitale.it/wp-content/uploads/2014/11/magnet.png);
+  background-size: contain;
+  background-color: rgba(255,255,255,0.9);
+  border: 5px solid rgba(255,255,255,0.9);
+  border-radius: 17px;
+  height: 36px;
+  width: 36px;
+  opacity: 0.5;
+  cursor: not-allowed;
+  display: none;
+}
+
+.magnet-link.active {
+  opacity: 1;
+  cursor: pointer;
+  display: block;
+}
+
+.magnet-link.active:hover {
+  opacity: 0.8;
+}

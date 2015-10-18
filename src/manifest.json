@@ -1,0 +1,25 @@
+{
+  "manifest_version": 2,
+  "name": "movieo.me: magnet link on movies",
+  "description": "Fast torrent download from movie.me",
+  "version": "1.0",
+  "browser_action": {
+    "default_icon": "logo.jpg"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://movieo.me/*",
+        "https://movieo.me/*"
+      ],
+      "css": ["./overrides.css"],
+      "js": ["./jquery-2.1.4.min.js", "./script.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "http://movieo.me/*",
+    "https://movieo.me/*"
+  ]
+}
