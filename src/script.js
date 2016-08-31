@@ -1,109 +1,144 @@
-var yifyService =  'yify.unblocked.la';//'yts.to';
-var cache = {};
+const cache = {};
+const ytsCache = {}
 
-var loading = false,
-  list,
-  interval,
-  maxAttempts = 5,
-  delay = 60;
-  omdbFind = 'http://www.omdbapi.com/?r=json&type=movie&t=',
-  yify = 'https://' + yifyService + '/api/v2/list_movies.json?query_term=';
+let windowHref = null;
 
-var magnetLink = '<a class="magnet-link" target="_blank"></a>';
-var downloadActions = '<div class="download-actions">' + magnetLink + '</div>';
+const magnetLink = '<a class="magnet-link" target="_blank"></a>';
+const downloadActions = '<div class="download-actions">' + magnetLink + '</div>';
 
-function isLoading() {
-  return $('#load-overlay').is(':visible');
-};
+const isLoading = () => $('#load-overlay').is(':visible');
 
-function isList() {
-  return window.location.href.indexOf('movieo.me/movies/') === -1;
-};
+const isList = () => window.location.href.match(/movieo.me\/movies\/\?|movieo.me\/movies\/watchlist|movieo.me\/movies\/seenlist|movieo.me\/movies\/blacklist/);
 
 function getMovieId(value) {
   const regEx = (/\/t\/p\/original\/([^"]+)\.jpg/g);
   return regEx.exec(value)[1];
 };
 
-function tick() {
-  var _loading = isLoading();
-  var _list = isList();
-  if (list !== _list || (loading && !_loading)) {
-    (isList() ? updateList : updateMoviePage)();
-  }
-  loading = _loading;
-  list = _list;
-};
+function runSerial(tasks) {
+  let result = Promise.resolve();
+  tasks.forEach(task => {
+    result = result.then(() => task());
+  });
+  return result;
+}
 
-function tryYify(magnetChild, title, imdbID, movieID, attempt) {
-  if (attempt < maxAttempts) {
-    var url = yify + imdbID;
-    function delayed() {
-      $.get(url)
-      .fail(function(err) {tryYify(magnetChild, title, imdbID, movieID, attempt + 1)})
-      .success(function(res) {
-        var movie = res.data.movies[0];
-        var magnet = '';
-        if (movie) {
-          var magnet = getMagnetLink(movie.torrents);
-        } else {
-          console.log('NO_MOVIE', title, imdbID);
-        }
-        magnetChild.attr('href', magnet);
-        magnetChild.attr('class', 'magnet-link' + (magnet ? ' active' : ''));
-        cache[movieID] = magnet;
-      });
+const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
+  const year = parseInt(_year.replace('(', ''));
+  if (!ytsCache[movieID]) {
+    const buildUrl = ({ title, year }) => (
+      `https://crossorigin.me/https://yts.ag/movie/${title.split(' ').concat(String(year)).map(s => s.toLowerCase().replace(/[().:]/g, '')).join('-')}`
+    );
+
+    const _onSuccess = (({ _1080p, _720p }) => {
+      const magnet = _1080p || _720p;
+      const text = _1080p ? '1080p' : '720p';
+
+      magnetChild.attr('href', magnet);
+      magnetChild.attr('class', 'magnet-link' + (magnet ? ' active' : ''));
+      magnetChild.text(text);
+      cache[movieID] = { text, magnet };
+    });
+
+    const onSuccess = html => {
+      ytsCache[movieID] = true;
+      $('#yts-container').html(html);
+      const downloadLinks = $('a.magnet-download.download-torrent.magnet');
+
+      const _1080p = (downloadLinks.filter((i, l) => l.title.match(/1080p/))[0] || {}).href;
+      const _720p = (downloadLinks.filter((i, l) => l.title.match(/720p/))[0] || {}).href;
+
+      _onSuccess({ _1080p, _720p });
     };
-    setTimeout(delayed, delay);
-  } else {
-    console.log('FAIL: ', title, imdbID);
+
+    const onFail = () => {
+      $.get(`https://yts.ag/browse-movies/${title}/all/all/0/latest`)
+        .success(html => {
+          // console.log($.parseHTML(html));
+          ytsCache[movieID] = true;
+          $('#yts-container').html(html);
+
+          const links = $('.browse-movie-tags');
+          const movies = $('.browse-movie-title');
+
+          if (movies.filter((i, el) => $(el).text().toLowerCase() === title.toLowerCase()).length) {
+            movies.each((i, el) => {
+              if ($(el).text().toLowerCase() === title.toLowerCase()) {
+                const _links = $(links.get(i)).children();
+                const _1080p = (_links.filter((i, l) => l.title.match(/1080p/))[0] || {}).href;
+                const _720p = (_links.filter((i, l) => l.title.match(/720p/))[0] || {}).href;
+
+                _onSuccess({ _1080p, _720p });
+              }
+            });
+          } else {
+            ytsCache[movieID] = 404;
+          }
+        })
+        .fail(() => {
+          ytsCache[movieID] = 404;
+        })
+    }
+
+    $.get(buildUrl({ title, year }))
+      .success(onSuccess)
+      .fail(onFail);
+  } else if (ytsCache[movieID] && ytsCache[movieID] !== 404) {
+    const { magnet, text } = cache[movieID];
+    magnetChild.attr('href', magnet);
+    magnetChild.attr('class', 'magnet-link' + (magnet ? ' active' : ''));
+    magnetChild.text(text);
   }
+
 }
 
 function update(magnetChild, movieID, title, year, i) {
-  i = i || 0;
-  var magnet = cache[movieID];
-  if (magnet) {
-    magnetChild.attr('href', magnet);
-    magnetChild.attr('class', 'magnet-link' + (magnet ? ' active' : ''));
-  } else {
-    var omdbURL = omdbFind + title + '&y=' + year.replace('(','').replace(')','');
-    $.get(omdbURL)
-      .success(function(res) {
-        setTimeout(function() {tryYify(magnetChild, title, res.imdbID, movieID, 0)}, i * delay);
-      });
-  }
+  scrapeYTS({ magnetChild, title, year, movieID });
 };
 
 function updateList() {
   $('.grid-movie-inner').prepend(downloadActions);
-  var movieIDs = $('.poster-cont').map(function(i, el) { return getMovieId($(el).attr('data-src')); });
-  var years = $('.movie-info .top .title .year');
-  $('.movie-info .top .title .name').each(function(i, el) {
-    var magnetChild = $('.movie-box:nth-child(' + (i+2) + ') .grid-movie-inner a.magnet-link');
-    var movieID = movieIDs[i];
-    var title = $(this).text();
-    var year = $(years[i]).text();
-    update(magnetChild, movieID, title, year, i);
-  });
+  const movieIDs = $('.poster-cont').map((i, el) => getMovieId($(el).attr('data-src')));
+  const years = $('.movie-info .top .title .year');
+  const toUpdate = $('.movie-info .top .title .name').map((i, el) => {
+    const magnetChild = $('.movie-box:nth-child(' + (i+2) + ') .grid-movie-inner a.magnet-link');
+    const movieID = movieIDs[i];
+    const title = $(el).text();
+    const year = $(years[i]).text();
+
+    return () => update(magnetChild, movieID, title, year, i);
+  }).toArray();
+
+  runSerial(toUpdate);
 };
 
 function updateMoviePage() {
   $('.movie-title').append(downloadActions);
-  var magnetChild = $('.movie-title a.magnet-link');
-  var movieID = getMovieId($($('#left img')[0]).attr('src'));
-  var title = $('.movie-title .name').text();
-  var year = $('.movie-title .year').text().replace('(','').replace(')','');
+  const magnetChild = $('.movie-title a.magnet-link');
+  const movieID = getMovieId($($('#left img')[0]).attr('src'));
+  const title = $('.movie-title .name').text();
+  const year = $('.movie-title .year').text().replace('(','').replace(')','');
   update(magnetChild, movieID, title, year);
 };
 
-function getMagnetLink(torrents) {
-  if (torrents.length) {
-    var torrent = torrents[torrents.length - 1];
-    return 'magnet:?xt=urn:btih:' + torrent.hash;
+function main() {
+  if (isLoading()) {
+    setTimeout(main, 100);
+  } else {
+    if (isList()) {
+      updateList();
+    } else {
+      updateMoviePage();
+    }
   }
-  return '';
-};
+}
 
+// START
+$('body').append('<div id="yts-container" style="display: none;"></div>');
 
-interval = setInterval(tick, 30);
+setInterval(() => {
+  if (window.location.href !== windowHref) {
+    windowHref = window.location.href;
+    main();
+  }
+}, 30);
