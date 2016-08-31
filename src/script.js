@@ -61,9 +61,13 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
           const links = $('.browse-movie-tags');
           const movies = $('.browse-movie-title');
 
-          if (movies.filter((i, el) => $(el).text().toLowerCase() === title.toLowerCase()).length) {
+          const isMatch = el => (
+            $(el).text().toLowerCase().indexOf(title.toLowerCase()) !== -1
+          );
+
+          if (movies.filter((i, el) => isMatch(el)).length) {
             movies.each((i, el) => {
-              if ($(el).text().toLowerCase() === title.toLowerCase()) {
+              if (isMatch(el)) {
                 const _links = $(links.get(i)).children();
                 const _1080p = (_links.filter((i, l) => l.title.match(/1080p/))[0] || {}).href;
                 const _720p = (_links.filter((i, l) => l.title.match(/720p/))[0] || {}).href;
