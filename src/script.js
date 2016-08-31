@@ -8,7 +8,7 @@ const downloadActions = '<div class="download-actions">' + magnetLink + '</div>'
 
 const isLoading = () => $('#load-overlay').is(':visible');
 
-const isList = () => window.location.href.match(/movieo.me\/movies\/\?|movieo.me\/movies\/watchlist|movieo.me\/movies\/seenlist|movieo.me\/movies\/blacklist/);
+const isList = () => window.location.href.match(/movieo.me\/movies\?|movieo.me\/movies$|movieo.me\/movies\/watchlist|movieo.me\/movies\/seenlist|movieo.me\/movies\/blacklist/);
 
 function getMovieId(value) {
   const regEx = (/\/t\/p\/original\/([^"]+)\.jpg/g);
