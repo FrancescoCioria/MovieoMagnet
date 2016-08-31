@@ -42,7 +42,7 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
 
     const onSuccess = html => {
       ytsCache[movieID] = true;
-      $('#yts-container').html(html);
+      $('#yts-container').html($.parseHTML(html)[78].innerHTML);
       const downloadLinks = $('a.magnet-download.download-torrent.magnet');
 
       const _1080p = (downloadLinks.filter((i, l) => l.title.match(/1080p/))[0] || {}).href;
@@ -56,7 +56,7 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
         .success(html => {
           // console.log($.parseHTML(html));
           ytsCache[movieID] = true;
-          $('#yts-container').html(html);
+          $('#yts-container').html($.parseHTML(html)[77].innerHTML);
 
           const links = $('.browse-movie-tags');
           const movies = $('.browse-movie-title');
