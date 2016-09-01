@@ -27,7 +27,7 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
   const year = parseInt(_year.replace('(', ''));
   if (!ytsCache[movieID]) {
     const buildUrl = ({ title, year }) => (
-      `https://crossorigin.me/https://yts.ag/movie/${title.split(' ').concat(String(year)).map(s => s.toLowerCase().replace(/[().:]/g, '')).join('-')}`
+      `https://crossorigin.me/https://yts.ag/movie/${title.split(' ').concat(String(year)).map(s => s.toLowerCase().replace(/[().:,;'"]/g, '')).join('-')}`
     );
 
     const _onSuccess = (({ _1080p, _720p }) => {
