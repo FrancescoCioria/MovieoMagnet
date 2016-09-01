@@ -44,3 +44,12 @@
 .magnet-link.active:hover {
   opacity: 0.8;
 }
+
+._movie-page.download-actions {
+  width: calc(100% - 32px);
+  margin: 5px 0;
+}
+
+._movie-page.download-actions .magnet-link {
+  position: static;
+}

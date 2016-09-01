@@ -4,15 +4,25 @@ const ytsCache = {}
 let windowHref = null;
 
 const magnetLink = '<a class="magnet-link" target="_blank"></a>';
-const downloadActions = '<div class="download-actions">' + magnetLink + '</div>';
+const downloadActions = (className) => `<div class="download-actions ${className || ''}">${magnetLink}</div>`;
 
 const isLoading = () => $('#load-overlay').is(':visible');
 
-const isList = () => window.location.href.match(/movieo.me\/movies\?|movieo.me\/movies$|movieo.me\/movies\/watchlist|movieo.me\/movies\/seenlist|movieo.me\/movies\/blacklist/);
+const isList = () => {
+  const regexps = [
+    /movieo.me\/movies\?/,
+    /movieo.me\/movies$/,
+    /movieo.me\/movies\/watchlist/,
+    /movieo.me\/movies\/seenlist/,
+    /movieo.me\/movies\/blacklist/,
+    /movieo.me\/movies\/info\//
+  ];
+  return regexps.filter(r => window.location.href.match(r)).length > 0;
+};
 
 function getMovieId(value) {
   const regEx = (/\/t\/p\/original\/([^"]+)\.jpg/g);
-  return regEx.exec(value)[1];
+  return (regEx.exec(value) || [])[1];
 };
 
 function runSerial(tasks) {
@@ -25,7 +35,7 @@ function runSerial(tasks) {
 
 const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
   const year = parseInt(_year.replace('(', ''));
-  if (!ytsCache[movieID]) {
+  if (movieID && !ytsCache[movieID]) {
     const buildUrl = ({ title, year }) => (
       `https://crossorigin.me/https://yts.ag/movie/${title.split(' ').concat(String(year)).map(s => s.toLowerCase().replace(/[().:,;'"]/g, '')).join('-')}`
     );
@@ -92,7 +102,7 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
     $.get(buildUrl({ title, year }))
       .success(onSuccess)
       .fail(onFail);
-  } else if (ytsCache[movieID] && ytsCache[movieID] !== 404) {
+  } else if (movieID && ytsCache[movieID] && ytsCache[movieID] !== 404) {
     const { magnet, text } = cache[movieID];
     magnetChild.attr('href', magnet);
     magnetChild.attr('class', 'magnet-link' + (magnet ? ' active' : ''));
@@ -106,7 +116,7 @@ function update(magnetChild, movieID, title, year, i) {
 };
 
 function updateList() {
-  $('.grid-movie-inner').prepend(downloadActions);
+  $('.grid-movie-inner').prepend(downloadActions());
   const movieIDs = $('.poster-cont').map((i, el) => getMovieId($(el).attr('data-src')));
   const years = $('.movie-info .top .title .year');
   const toUpdate = $('.movie-info .top .title .name').map((i, el) => {
@@ -122,11 +132,12 @@ function updateList() {
 };
 
 function updateMoviePage() {
-  $('.movie-title').append(downloadActions);
-  const magnetChild = $('.movie-title a.magnet-link');
-  const movieID = getMovieId($($('#left img')[0]).attr('src'));
-  const title = $('.movie-title .name').text();
-  const year = $('.movie-title .year').text().replace('(','').replace(')','');
+  $('.info').append(downloadActions('_movie-page'));
+  const magnetChild = $('.info a.magnet-link');
+  const [, movieID] = /imdb.com\/title\/(.+)/.exec($('.link.tt-parent').get(0).href);
+  const title = $('.movie-title').text();
+  const _year = $('.genres-year').text().split(' - ');
+  const year = _year[_year.length - 1];
   update(magnetChild, movieID, title, year);
 };
 
@@ -135,8 +146,10 @@ function main() {
     setTimeout(main, 100);
   } else {
     if (isList()) {
+      console.log('>>> LIST PAGE');
       updateList();
     } else {
+      console.log('>>> MOVIE PAGE');
       updateMoviePage();
     }
   }
