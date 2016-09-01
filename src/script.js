@@ -54,27 +54,32 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
     const onFail = () => {
       $.get(`https://yts.ag/browse-movies/${title}/all/all/0/latest`)
         .success(html => {
-          // console.log($.parseHTML(html));
           ytsCache[movieID] = true;
           $('#yts-container').html($.parseHTML(html)[77].innerHTML);
 
           const links = $('.browse-movie-tags');
+          const years = $('.browse-movie-year');
           const movies = $('.browse-movie-title');
 
-          const isMatch = el => (
-            $(el).text().toLowerCase().indexOf(title.toLowerCase()) !== -1
+          const isMatch = ({ title: _title, year: _year }) => (
+            _title.toLowerCase() === title.toLowerCase() ||
+            (_year === year &&
+              (_title.toLowerCase().indexOf(title.toLowerCase()) !== -1 || title.toLowerCase().indexOf(_title.toLowerCase()) !== -1)
+            )
           );
 
-          if (movies.filter((i, el) => isMatch(el)).length) {
-            movies.each((i, el) => {
-              if (isMatch(el)) {
+          if (movies.filter((i, el) => isMatch({ title: $(el).text(), year: parseInt($(years.get(i)).text()) })).length) {
+            const matches = movies.map((i, el) => {
+              if (isMatch({ title: $(el).text(), year: parseInt($(years.get(i)).text()) })) {
                 const _links = $(links.get(i)).children();
                 const _1080p = (_links.filter((i, l) => l.title.match(/1080p/))[0] || {}).href;
                 const _720p = (_links.filter((i, l) => l.title.match(/720p/))[0] || {}).href;
 
-                _onSuccess({ _1080p, _720p });
+                return () => _onSuccess({ _1080p, _720p });
               }
-            });
+              return null;
+            }).toArray().filter(x => x);
+            matches.length > 0 && matches[0]();
           } else {
             ytsCache[movieID] = 404;
           }
