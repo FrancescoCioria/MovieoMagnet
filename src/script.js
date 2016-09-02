@@ -1,6 +1,10 @@
 const cache = {};
 const ytsCache = {}
 
+// const CORS_PROXY = 'https://crossorigin.me/';
+// const CORS_PROXY = 'http://cors.io/?u=';
+const CORS_PROXY = '';
+
 let windowHref = null;
 
 const magnetLink = '<a class="magnet-link" target="_blank"></a>';
@@ -37,7 +41,7 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
   const year = parseInt(_year.replace('(', ''));
   if (movieID && !ytsCache[movieID]) {
     const buildUrl = ({ title, year }) => (
-      `https://crossorigin.me/https://yts.ag/movie/${title.split(' ').concat(String(year)).map(s => s.toLowerCase().replace(/[().:,;'"]/g, '')).join('-')}`
+      `${CORS_PROXY}https://yts.ag/movie/${title.split(' ').concat(String(year)).map(s => s.toLowerCase().replace(/[().:,;'"]/g, '')).join('-')}`
     );
 
     const _onSuccess = (({ _1080p, _720p }) => {
@@ -62,7 +66,7 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
     };
 
     const onFail = () => {
-      $.get(`https://yts.ag/browse-movies/${title}/all/all/0/latest`)
+      $.get(`${CORS_PROXY}https://yts.ag/browse-movies/${title}/all/all/0/latest`)
         .success(html => {
           ytsCache[movieID] = true;
           $('#yts-container').html($.parseHTML(html)[77].innerHTML);
