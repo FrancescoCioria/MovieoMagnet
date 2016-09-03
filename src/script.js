@@ -56,11 +56,23 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
 
     const onSuccess = html => {
       ytsCache[movieID] = true;
-      $('#yts-container').html($.parseHTML(html)[78].innerHTML);
-      const downloadLinks = $('a.magnet-download.download-torrent.magnet');
 
-      const _1080p = (downloadLinks.filter((i, l) => l.title.match(/1080p/))[0] || {}).href;
-      const _720p = (downloadLinks.filter((i, l) => l.title.match(/720p/))[0] || {}).href;
+      /* PARSING HTML */
+      // $('#yts-container').html($.parseHTML(html)[78].innerHTML);
+      // const downloadLinks = $('a[href*="magnet"]');// $('a.magnet-download.download-torrent.magnet');
+      // const _1080p = (downloadLinks.filter((i, l) => l.title.match(/1080p/))[0] || {}).href;
+      // const _720p = (downloadLinks.filter((i, l) => l.title.match(/720p/))[0] || {}).href;
+
+      /* USING REGEXP */
+      const downloadLinks = html.match(/href="magnet[^\/]+/g);
+
+      const _1080p = downloadLinks
+        .filter(s => (s.match(/title="([^"]+)/) || [])[0].indexOf('1080p') !== -1)
+        .map(s => ((/href="(magnet[^"]+)/).exec(s) || [])[1]);
+
+      const _720p = downloadLinks
+        .filter(s => (s.match(/title="([^"]+)/) || [])[0].indexOf('720p') !== -1)
+        .map(s => ((/href="(magnet[^"]+)/).exec(s) || [])[1]);
 
       _onSuccess({ _1080p, _720p });
     };
