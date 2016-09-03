@@ -3,7 +3,7 @@ const ytsCache = {}
 
 // const CORS_PROXY = 'https://crossorigin.me/';
 // const CORS_PROXY = 'http://cors.io/?u=';
-const CORS_PROXY = '';
+const CORS_PROXY = 'https://buildocorsproxy.herokuapp.com/';
 
 let windowHref = null;
 
