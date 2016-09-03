@@ -30,15 +30,14 @@
   top: 5px;
   right: 5px;
   font-size: 20px;
-  opacity: 0.5;
-  cursor: not-allowed;
-  display: none;
-}
-
-.magnet-link.active {
   opacity: 1;
   cursor: pointer;
   display: block;
+}
+
+.magnet-link.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;;
 }
 
 .magnet-link.active:hover {

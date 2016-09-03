@@ -108,6 +108,8 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
             matches.length > 0 && matches[0]();
           } else {
             ytsCache[movieID] = 404;
+            magnetChild.attr('class', 'magnet-link disabled');
+            magnetChild.text('nope');
           }
         })
         .fail(() => {
@@ -123,6 +125,9 @@ const scrapeYTS = ({ magnetChild, title, year: _year, movieID }) => {
     magnetChild.attr('href', magnet);
     magnetChild.attr('class', 'magnet-link' + (magnet ? ' active' : ''));
     magnetChild.text(text);
+  } else if (movieID && ytsCache[movieID] && ytsCache[movieID] === 404) {
+    magnetChild.attr('class', 'magnet-link disabled');
+    magnetChild.text('nope');
   }
 
 }
